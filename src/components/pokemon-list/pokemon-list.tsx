@@ -1,20 +1,37 @@
+import { useEffect, useState } from "react";
 import { Pokemon } from "..";
-import { usePokemonList } from "../../hooks";
 import "./styles.css";
 
-interface PokemonListProps {
-  showPokemonList?: boolean;
-}
+const pokemonAPI = "https://pokeapi.co/api/v2/pokemon?limit=10&offset=0";
 
-const PokemonList = (props: PokemonListProps) => {
-  const { showPokemonList = false } = props;
+const PokemonList = () => {
+  const [pokemonList, setPokemonList] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<undefined | string>();
 
-  const { isLoading, pokemonList } = usePokemonList({
-    enabled: showPokemonList,
-  });
+  useEffect(() => {
+    const fetchData = async () => {
+      const response = await fetch(pokemonAPI);
+
+      if (response.ok) {
+        const data = await response.json();
+        setPokemonList(data.results);
+        setIsLoading(false);
+      } else {
+        setError(response.statusText);
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   if (isLoading) {
     return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>{error}</div>;
   }
 
   return (
