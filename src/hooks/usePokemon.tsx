@@ -17,6 +17,25 @@ interface Props {
   pokemonAPI?: string;
 }
 
+const cachedFetches: Record<string, Promise<any>> = {};
+const cachedFetch = (url: string): Promise<any> => {
+  if (!cachedFetches[url]) {
+    cachedFetches[url] = fetch(url)
+      .then(async (res) => ({
+        data: await res.json(),
+        status: res.status,
+        error: res.statusText,
+      }))
+      .catch((err) => ({
+        data: undefined,
+        status: 500,
+        error: err.message,
+      }));
+  }
+
+  return cachedFetches[url];
+};
+
 const usePokemon = (props: Props) => {
   const { enabled = true, pokemonAPI } = props;
 
@@ -28,22 +47,21 @@ const usePokemon = (props: Props) => {
 
   useEffect(() => {
     if (enabled && pokemonAPI) {
-      fetch(pokemonAPI)
-        .then((res) => res.json())
-        .then((data) => {
+      cachedFetch(pokemonAPI).then((res) => {
+        if (res.status === 200) {
           setState({
-            pokemon: data,
+            pokemon: res.data,
             isLoading: false,
             error: undefined,
           });
-        })
-        .catch((err) => {
+        } else {
           setState({
             pokemon: undefined,
             isLoading: false,
-            error: err.message,
+            error: res.error,
           });
-        });
+        }
+      });
     }
   }, [enabled]);
 

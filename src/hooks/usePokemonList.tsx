@@ -6,6 +6,25 @@ interface Props {
   enabled?: boolean;
 }
 
+const cachedFetches: Record<string, Promise<any>> = {};
+const cachedFetch = (url: string): Promise<any> => {
+  if (!cachedFetches[url]) {
+    cachedFetches[url] = fetch(url)
+      .then(async (res) => ({
+        data: await res.json(),
+        status: res.status,
+        error: res.statusText,
+      }))
+      .catch((err) => ({
+        data: undefined,
+        status: 500,
+        error: err.message,
+      }));
+  }
+
+  return cachedFetches[url];
+};
+
 const usePokemonList = (props: Props) => {
   const { enabled = true } = props;
 
@@ -17,22 +36,21 @@ const usePokemonList = (props: Props) => {
 
   useEffect(() => {
     if (enabled) {
-      fetch(pokemonAPI)
-        .then((res) => res.json())
-        .then((data) => {
+      cachedFetch(pokemonAPI).then((res) => {
+        if (res.status === 200) {
           setState({
-            pokemonList: data.results,
+            pokemonList: res.data.results,
             isLoading: false,
             error: undefined,
           });
-        })
-        .catch((err) => {
+        } else {
           setState({
             pokemonList: [],
             isLoading: false,
-            error: err.message,
+            error: res.error,
           });
-        });
+        }
+      });
     }
   }, [enabled]);
 
