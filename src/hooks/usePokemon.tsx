@@ -1,9 +1,5 @@
 import { use } from "react";
-
-interface Props {
-  enabled?: boolean;
-  pokemonAPI?: string;
-}
+import { cache } from "../utils";
 
 interface IPokemon {
   sprites: {
@@ -11,22 +7,10 @@ interface IPokemon {
   };
 }
 
-interface IPokemonResponse {
-  status: number;
-  data: IPokemon | string;
+interface Props {
+  enabled?: boolean;
+  pokemonAPI?: string;
 }
-
-const cachedFetches: Record<string, Promise<IPokemonResponse>> = {};
-const cachedFetch = (url: string): Promise<IPokemonResponse> => {
-  if (!cachedFetches[url]) {
-    cachedFetches[url] = fetch(url).then(async (res) => ({
-      status: res.status,
-      data: res.status === 200 ? await res.json() : null,
-    }));
-  }
-
-  return cachedFetches[url];
-};
 
 const usePokemon = (props: Props) => {
   const { enabled = true, pokemonAPI } = props;
@@ -35,7 +19,7 @@ const usePokemon = (props: Props) => {
     return { pokemon: undefined, isLoading: true, error: undefined };
   }
 
-  const { data, status } = use(cachedFetch(pokemonAPI));
+  const { data, status } = use(cache(pokemonAPI));
 
   return {
     pokemon: status === 200 ? (data as IPokemon) : undefined,
