@@ -1,11 +1,7 @@
 import { use } from "react";
+import { cache } from "../utils";
 
 const pokemonAPI = "https://pokeapi.co/api/v2/pokemon?limit=10&offset=0";
-
-const pokemonListFetch = fetch(pokemonAPI).then(async (res) => ({
-  status: res.status,
-  data: res.status === 200 ? await res.json() : null,
-}));
 
 interface Props {
   enabled?: boolean;
@@ -18,7 +14,7 @@ const usePokemonList = (props: Props) => {
     return { pokemonList: [], isLoading: true, error: undefined };
   }
 
-  const { data, status } = use(pokemonListFetch);
+  const { data, status } = use(cache(pokemonAPI));
 
   return {
     pokemonList: status === 200 ? data.results : [],
