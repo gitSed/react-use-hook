@@ -1,11 +1,6 @@
-import { use } from "react";
+import { useState, useEffect } from "react";
 
 const pokemonAPI = "https://pokeapi.co/api/v2/pokemon?limit=10&offset=0";
-
-const pokemonListFetch = fetch(pokemonAPI).then(async (res) => ({
-  status: res.status,
-  data: res.status === 200 ? await res.json() : null,
-}));
 
 interface Props {
   enabled?: boolean;
@@ -14,16 +9,37 @@ interface Props {
 const usePokemonList = (props: Props) => {
   const { enabled = true } = props;
 
-  if (!enabled) {
-    return { pokemonList: [], isLoading: true, error: undefined };
-  }
+  const [state, setState] = useState({
+    pokemonList: [],
+    isLoading: true,
+    error: undefined,
+  });
 
-  const { data, status } = use(pokemonListFetch);
+  useEffect(() => {
+    if (enabled) {
+      fetch(pokemonAPI)
+        .then((res) => res.json())
+        .then((data) => {
+          setState({
+            pokemonList: data.results,
+            isLoading: false,
+            error: undefined,
+          });
+        })
+        .catch((err) => {
+          setState({
+            pokemonList: [],
+            isLoading: false,
+            error: err.message,
+          });
+        });
+    }
+  }, [enabled]);
 
   return {
-    pokemonList: status === 200 ? data.results : [],
-    isLoading: false,
-    error: status === 200 ? undefined : "Something went wrong",
+    pokemonList: state.pokemonList,
+    isLoading: state.isLoading,
+    error: state.error,
   };
 };
 

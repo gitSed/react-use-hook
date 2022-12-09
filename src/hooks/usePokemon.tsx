@@ -1,9 +1,4 @@
-import { use } from "react";
-
-interface Props {
-  enabled?: boolean;
-  pokemonAPI?: string;
-}
+import { useState, useEffect } from "react";
 
 interface IPokemon {
   sprites: {
@@ -11,36 +6,51 @@ interface IPokemon {
   };
 }
 
-interface IPokemonResponse {
-  status: number;
-  data: IPokemon | string;
+interface LocalState {
+  pokemon?: IPokemon;
+  isLoading: boolean;
+  error: string | undefined;
 }
 
-const cachedFetches: Record<string, Promise<IPokemonResponse>> = {};
-const cachedFetch = (url: string): Promise<IPokemonResponse> => {
-  if (!cachedFetches[url]) {
-    cachedFetches[url] = fetch(url).then(async (res) => ({
-      status: res.status,
-      data: res.status === 200 ? await res.json() : null,
-    }));
-  }
-
-  return cachedFetches[url];
-};
+interface Props {
+  enabled?: boolean;
+  pokemonAPI?: string;
+}
 
 const usePokemon = (props: Props) => {
   const { enabled = true, pokemonAPI } = props;
 
-  if (!enabled || !pokemonAPI) {
-    return { pokemon: undefined, isLoading: true, error: undefined };
-  }
+  const [state, setState] = useState<LocalState>({
+    pokemon: undefined,
+    isLoading: true,
+    error: undefined,
+  });
 
-  const { data, status } = use(cachedFetch(pokemonAPI));
+  useEffect(() => {
+    if (enabled && pokemonAPI) {
+      fetch(pokemonAPI)
+        .then((res) => res.json())
+        .then((data) => {
+          setState({
+            pokemon: data,
+            isLoading: false,
+            error: undefined,
+          });
+        })
+        .catch((err) => {
+          setState({
+            pokemon: undefined,
+            isLoading: false,
+            error: err.message,
+          });
+        });
+    }
+  }, [enabled]);
 
   return {
-    pokemon: status === 200 ? (data as IPokemon) : undefined,
-    isLoading: false,
-    error: status === 200 ? undefined : "Something went wrong",
+    pokemon: state.pokemon,
+    isLoading: state.isLoading,
+    error: state.error,
   };
 };
 
